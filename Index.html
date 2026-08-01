@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#161310">
+  <title>Đặt lịch Hair Salon</title>
+  <style>
+    :root {
+      --ink: #1d1916;
+      --muted: #746d67;
+      --paper: #fffdf9;
+      --soft: #f4efe8;
+      --line: #e8dfd5;
+      --accent: #b97942;
+      --accent-dark: #86512b;
+      --success: #167a5b;
+      --danger: #bd3b3b;
+      --shadow: 0 18px 55px rgba(54, 38, 25, .13);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(185, 121, 66, .18), transparent 28rem),
+        linear-gradient(145deg, #f8f3ec, #eee5db);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .page { width: min(1120px, 100%); margin: auto; padding: 18px 14px 40px; }
+    .hero { padding: 28px 8px 24px; }
+    .eyebrow { color: var(--accent-dark); font-size: .76rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { max-width: 700px; margin: 9px 0 10px; font-family: Georgia, serif; font-size: clamp(2rem, 8vw, 4rem); line-height: 1.02; font-weight: 500; }
+    .hero p { max-width: 610px; margin: 0; color: var(--muted); line-height: 1.65; }
+    .shell { overflow: hidden; border: 1px solid rgba(255,255,255,.7); border-radius: 24px; background: rgba(255,253,249,.94); box-shadow: var(--shadow); }
+    .steps { display: flex; gap: 5px; overflow-x: auto; padding: 14px; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+    .step { display: flex; flex: 1 0 auto; align-items: center; gap: 8px; min-width: max-content; padding: 9px 11px; border-radius: 99px; color: var(--muted); font-size: .82rem; font-weight: 700; }
+    .step span { display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: white; }
+    .step.active { color: var(--accent-dark); background: #f6e7d9; }
+    .step.active span { color: white; border-color: var(--accent); background: var(--accent); }
+    .content { padding: 22px 18px 16px; }
+    .panel { display: none; animation: appear .25s ease; }
+    .panel.active { display: block; }
+    @keyframes appear { from { opacity: 0; transform: translateY(5px); } }
+    h2 { margin: 0 0 6px; font-family: Georgia, serif; font-size: 1.65rem; font-weight: 500; }
+    .hint { margin: 0 0 21px; color: var(--muted); font-size: .92rem; line-height: 1.5; }
+    .field-grid { display: grid; gap: 15px; }
+    label.field { display: grid; gap: 7px; color: #514a44; font-size: .86rem; font-weight: 700; }
+    input, select { width: 100%; min-height: 49px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; outline: none; color: var(--ink); background: white; transition: .18s ease; }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(185,121,66,.13); }
+    .cards { display: grid; gap: 10px; }
+    .service-card { position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: white; cursor: pointer; transition: .18s ease; }
+    .service-card:hover { transform: translateY(-1px); border-color: #cfad91; }
+    .service-card.selected { border-color: var(--accent); background: #fff8f1; box-shadow: 0 0 0 2px rgba(185,121,66,.1); }
+    .service-card input { width: 19px; min-height: 19px; accent-color: var(--accent); }
+    .service-name { display: block; font-weight: 750; }
+    .service-meta { display: block; margin-top: 3px; color: var(--muted); font-size: .78rem; }
+    .price { color: var(--accent-dark); font-size: .9rem; font-weight: 800; white-space: nowrap; }
+    .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; min-height: 80px; }
+    .slot { min-height: 43px; border: 1px solid var(--line); border-radius: 11px; color: #574d44; background: white; font-weight: 700; }
+    .slot:hover:not(:disabled), .slot.selected { color: white; border-color: var(--accent-dark); background: var(--accent-dark); }
+    .slot:disabled { color: #b5aca5; border-style: dashed; background: #f6f3ef; cursor: not-allowed; text-decoration: line-through; }
+    .slot-message { grid-column: 1 / -1; align-self: center; padding: 16px; color: var(--muted); text-align: center; }
+    .summary { display: grid; gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--line); }
+    .summary-row { display: flex; justify-content: space-between; gap: 16px; padding: 13px 14px; background: white; }
+    .summary-row span:first-child { color: var(--muted); }
+    .summary-row strong { text-align: right; }
+    .summary-row.total { align-items: center; background: #fff7ef; }
+    .summary-row.total strong { color: var(--accent-dark); font-size: 1.15rem; }
+    .footer { display: flex; justify-content: space-between; gap: 10px; padding: 16px 18px 20px; }
+    .btn { min-height: 48px; padding: 0 19px; border: 0; border-radius: 12px; font-weight: 800; }
+    .btn-secondary { color: #514a44; background: var(--soft); }
+    .btn-primary { margin-left: auto; color: white; background: var(--ink); box-shadow: 0 8px 20px rgba(29,25,22,.17); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .spinner { display: inline-block; width: 16px; height: 16px; margin-right: 7px; border: 2px solid rgba(255,255,255,.35); border-top-color: white; border-radius: 50%; vertical-align: -3px; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; z-index: 20; right: 14px; bottom: 14px; left: 14px; transform: translateY(140%); padding: 14px 16px; border-radius: 13px; color: white; background: #332d29; box-shadow: var(--shadow); opacity: 0; transition: .3s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+    .overlay { position: fixed; z-index: 30; inset: 0; display: none; place-items: center; padding: 18px; background: rgba(23,19,16,.55); backdrop-filter: blur(4px); }
+    .overlay.show { display: grid; }
+    .modal { width: min(430px, 100%); padding: 28px; border-radius: 21px; background: white; box-shadow: var(--shadow); text-align: center; }
+    .modal-icon { display: grid; width: 58px; height: 58px; margin: 0 auto 14px; place-items: center; border-radius: 50%; color: white; background: var(--success); font-size: 1.7rem; }
+    .modal h3 { margin: 0 0 8px; font-family: Georgia, serif; font-size: 1.7rem; }
+    .modal p { color: var(--muted); line-height: 1.55; }
+    .modal .btn { width: 100%; margin-top: 8px; }
+    .loading-page { padding: 60px 20px; color: var(--muted); text-align: center; }
+    .loading-page .spinner { width: 28px; height: 28px; border-color: rgba(134,81,43,.18); border-top-color: var(--accent-dark); }
+    @media (min-width: 720px) {
+      .page { padding: 30px 24px 60px; }
+      .hero { padding: 42px 10px 34px; }
+      .steps { padding: 18px 24px; }
+      .step { justify-content: center; }
+      .content { padding: 30px 32px 20px; }
+      .field-grid { grid-template-columns: 1fr 1fr; }
+      .cards { grid-template-columns: 1fr 1fr; }
+      .slots { grid-template-columns: repeat(6, 1fr); }
+      .footer { padding: 18px 32px 28px; }
+      .toast { right: 24px; bottom: 24px; left: auto; width: min(390px, calc(100% - 48px)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">Hair Studio · Booking</div>
+      <h1>Mái tóc đẹp bắt đầu từ một cuộc hẹn.</h1>
+      <p>Chọn dịch vụ, stylist và thời gian phù hợp. Chúng tôi sẽ liên hệ xác nhận lịch hẹn của bạn.</p>
+    </header>
+
+    <section class="shell" aria-label="Biểu mẫu đặt lịch">
+      <nav class="steps" aria-label="Các bước đặt lịch">
+        <div class="step active" data-step="0"><span>1</span>Thông tin</div>
+        <div class="step" data-step="1"><span>2</span>Dịch vụ</div>
+        <div class="step" data-step="2"><span>3</span>Stylist</div>
+        <div class="step" data-step="3"><span>4</span>Thời gian</div>
+        <div class="step" data-step="4"><span>5</span>Xác nhận</div>
+      </nav>
+
+      <div id="appContent">
+        <div class="loading-page"><span class="spinner"></span><p>Đang tải dữ liệu salon…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+  <div id="successOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="modal">
+      <div class="modal-icon">✓</div>
+      <h3 id="successTitle">Đặt lịch thành công</h3>
+      <p id="successMessage"></p>
+      <button id="newBookingBtn" class="btn btn-primary" type="button">Tạo lịch hẹn mới</button>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      step: 0,
+      services: [],
+      stylists: [],
+      selectedServices: [],
+      selectedTime: '',
+      availability: null,
+      loadingAvailability: false
+    };
+
+    const money = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+    const appContent = document.getElementById('appContent');
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    document.addEventListener('DOMContentLoaded', loadInitialData);
+
+    function gas(method, ...args) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(error => reject(new Error(error && error.message ? error.message : String(error))))
+          [method](...args);
+      });
+    }
+
+    async function loadInitialData() {
+      try {
+        const data = await gas('getInitialData');
+        if (!data || !data.success) throw new Error('Không thể tải dữ liệu salon.');
+        state.services = data.services || [];
+        state.stylists = data.stylists || [];
+        state.today = data.today;
+        state.hours = data.businessHours;
+        renderApp();
+      } catch (error) {
+        appContent.innerHTML = '<div class="loading-page"><p>Không thể tải ứng dụng.</p><button class="btn btn-primary" type="button" id="retryBtn">Thử lại</button></div>';
+        document.getElementById('retryBtn').addEventListener('click', loadInitialData);
+        showToast(error.message, 'error');
+      }
+    }
+
+    function renderApp() {
+      appContent.innerHTML = `
+        <form id="bookingForm" novalidate>
+          <div class="content">
+            <section class="panel active" data-panel="0">
+              <h2>Thông tin của bạn</h2>
+              <p class="hint">Salon chỉ dùng thông tin này để xác nhận lịch hẹn.</p>
+              <div class="field-grid">
+                <label class="field">Họ và tên
+                  <input id="customerName" name="customerName" autocomplete="name" maxlength="100" placeholder="Nguyễn Văn An" required>
+                </label>
+                <label class="field">Số điện thoại
+                  <input id="customerPhone" name="customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="09xx xxx xxx" required>
+                </label>
+              </div>
+            </section>
+
+            <section class="panel" data-panel="1">
+              <h2>Chọn dịch vụ</h2>
+              <p class="hint">Bạn có thể chọn nhiều dịch vụ. Thời gian và tổng tiền sẽ tự động cập nhật.</p>
+              <div id="serviceList" class="cards"></div>
+            </section>
+
+            <section class="panel" data-panel="2">
+              <h2>Chọn stylist</h2>
+              <p class="hint">Nếu chọn bất kỳ, hệ thống sẽ tự xếp một stylist còn trống.</p>
+              <label class="field">Stylist mong muốn
+                <select id="stylistSelect" required></select>
+              </label>
+            </section>
+
+            <section class="panel" data-panel="3">
+              <h2>Chọn ngày & giờ</h2>
+              <p class="hint" id="durationHint"></p>
+              <label class="field" style="margin-bottom:18px">Ngày hẹn
+                <input id="bookingDate" type="date" min="${escapeHtml(state.today)}" required>
+              </label>
+              <div id="slotList" class="slots"><div class="slot-message">Chọn ngày để xem giờ còn trống.</div></div>
+            </section>
+
+            <section class="panel" data-panel="4">
+              <h2>Xác nhận lịch hẹn</h2>
+              <p class="hint">Vui lòng kiểm tra lại trước khi gửi yêu cầu.</p>
+              <div id="summary" class="summary"></div>
+            </section>
+          </div>
+          <footer class="footer">
+            <button id="backBtn" class="btn btn-secondary" type="button" hidden>Quay lại</button>
+            <button id="nextBtn" class="btn btn-primary" type="button">Tiếp tục</button>
+          </footer>
+        </form>`;
+
+      renderServices();
+      renderStylists();
+      bindEvents();
+      updateStep();
+    }
+
+    function renderServices() {
+      const list = document.getElementById('serviceList');
+      if (!state.services.length) {
+        list.innerHTML = '<div class="slot-message">Hiện chưa có dịch vụ đang hoạt động.</div>';
+        return;
+      }
+      list.innerHTML = state.services.map(service => `
+        <label class="service-card" data-service-card="${escapeHtml(service.id)}">
+          <input type="checkbox" name="service" value="${escapeHtml(service.id)}">
+          <span><span class="service-name">${escapeHtml(service.name)}</span><span class="service-meta">${service.duration} phút</span></span>
+          <span class="price">${money.format(service.price)}</span>
+        </label>`).join('');
+    }
+
+    function renderStylists() {
+      const select = document.getElementById('stylistSelect');
+      select.innerHTML = '<option value="ANY">Ngẫu nhiên / Stylist bất kỳ</option>' + state.stylists
+        .map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('');
+    }
+
+    function bindEvents() {
+      document.getElementById('backBtn').addEventListener('click', () => changeStep(-1));
+      document.getElementById('nextBtn').addEventListener('click', handleNext);
+      document.getElementById('serviceList').addEventListener('change', event => {
+        if (!event.target.matches('input[name="service"]')) return;
+        state.selectedServices = [...document.querySelectorAll('input[name="service"]:checked')].map(input => input.value);
+        document.querySelectorAll('.service-card').forEach(card => card.classList.toggle('selected', card.querySelector('input').checked));
+        resetAvailability();
+      });
+      document.getElementById('stylistSelect').addEventListener('change', resetAvailability);
+      document.getElementById('bookingDate').addEventListener('change', fetchAvailability);
+      document.getElementById('slotList').addEventListener('click', event => {
+        const button = event.target.closest('.slot:not(:disabled)');
+        if (!button) return;
+        document.querySelectorAll('.slot').forEach(item => item.classList.remove('selected'));
+        button.classList.add('selected');
+        state.selectedTime = button.dataset.time;
+      });
+    }
+
+    function handleNext() {
+      if (!validateStep()) return;
+      if (state.step < 4) changeStep(1);
+      else submitBooking();
+    }
+
+    function changeStep(delta) {
+      state.step = Math.max(0, Math.min(4, state.step + delta));
+      if (state.step === 3) {
+        document.getElementById('durationHint').textContent = `Tổng thời gian dự kiến: ${totalDuration()} phút. Slot bắt đầu cách nhau ${state.hours.stepMinutes} phút.`;
+        if (document.getElementById('bookingDate').value && !state.availability) fetchAvailability();
+      }
+      if (state.step === 4) renderSummary();
+      updateStep();
+      document.querySelector('.shell').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function updateStep() {
+      document.querySelectorAll('.panel').forEach((panel, index) => panel.classList.toggle('active', index === state.step));
+      document.querySelectorAll('.step').forEach((item, index) => item.classList.toggle('active', index === state.step));
+      document.getElementById('backBtn').hidden = state.step === 0;
+      const next = document.getElementById('nextBtn');
+      next.textContent = state.step === 4 ? 'Đặt lịch ngay' : 'Tiếp tục';
+    }
+
+    function validateStep() {
+      if (state.step === 0) {
+        const name = document.getElementById('customerName');
+        const phone = document.getElementById('customerPhone');
+        if (name.value.trim().length < 2) return invalid(name, 'Vui lòng nhập họ tên hợp lệ.');
+        if (!/^(?:\+84|0)[0-9\s.()-]{9,14}$/.test(phone.value.trim())) return invalid(phone, 'Vui lòng nhập số điện thoại hợp lệ.');
+      }
+      if (state.step === 1 && !state.selectedServices.length) {
+        showToast('Vui lòng chọn ít nhất một dịch vụ.', 'error');
+        return false;
+      }
+      if (state.step === 2 && !state.stylists.length) {
+        showToast('Hiện chưa có stylist hoạt động.', 'error');
+        return false;
+      }
+      if (state.step === 3) {
+        const date = document.getElementById('bookingDate');
+        if (!date.value) return invalid(date, 'Vui lòng chọn ngày hẹn.');
+        if (state.loadingAvailability) {
+          showToast('Đang kiểm tra lịch trống, vui lòng chờ.', 'error');
+          return false;
+        }
+        if (!state.selectedTime) {
+          showToast('Vui lòng chọn một khung giờ còn trống.', 'error');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function invalid(element, message) {
+      element.focus();
+      showToast(message, 'error');
+      return false;
+    }
+
+    function resetAvailability() {
+      state.availability = null;
+      state.selectedTime = '';
+      const date = document.getElementById('bookingDate');
+      if (date && date.value && state.step === 3) fetchAvailability();
+    }
+
+    async function fetchAvailability() {
+      const date = document.getElementById('bookingDate').value;
+      const slotList = document.getElementById('slotList');
+      state.selectedTime = '';
+      if (!date) {
+        slotList.innerHTML = '<div class="slot-message">Chọn ngày để xem giờ còn trống.</div>';
+        return;
+      }
+      state.loadingAvailability = true;
+      slotList.innerHTML = '<div class="slot-message"><span class="spinner" style="border-top-color:#86512b"></span> Đang kiểm tra lịch…</div>';
+      try {
+        state.availability = await gas('checkAvailability', date, document.getElementById('stylistSelect').value);
+        renderSlots();
+      } catch (error) {
+        state.availability = null;
+        slotList.innerHTML = '<div class="slot-message">Không thể tải lịch trống. Hãy thử chọn lại ngày.</div>';
+        showToast(error.message, 'error');
+      } finally {
+        state.loadingAvailability = false;
+      }
+    }
+
+    function renderSlots() {
+      const data = state.availability;
+      const duration = totalDuration();
+      const selectedStylist = document.getElementById('stylistSelect').value;
+      const stylistIds = selectedStylist === 'ANY' ? state.stylists.map(item => item.id) : [selectedStylist];
+      const buttons = [];
+      const now = new Date();
+      const selectedDate = document.getElementById('bookingDate').value;
+      const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const currentMinute = now.getHours() * 60 + now.getMinutes();
+
+      for (let start = data.openMinute; start + duration <= data.closeMinute; start += data.stepMinutes) {
+        const hasStylist = stylistIds.some(id => !overlaps(start, start + duration, data.busyByStylist[id] || []));
+        const inPast = selectedDate === todayLocal && start <= currentMinute;
+        const disabled = !hasStylist || inPast;
+        const time = minuteToTime(start);
+        buttons.push(`<button class="slot" type="button" data-time="${time}" ${disabled ? 'disabled' : ''} aria-label="${time}${disabled ? ', không còn trống' : ', còn trống'}">${time}</button>`);
+      }
+      document.getElementById('slotList').innerHTML = buttons.length ? buttons.join('') : '<div class="slot-message">Dịch vụ đã chọn quá dài so với giờ hoạt động.</div>';
+    }
+
+    function overlaps(start, end, intervals) {
+      return intervals.some(item => start < item.end && end > item.start);
+    }
+
+    function minuteToTime(value) {
+      return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+    }
+
+    function selectedServiceObjects() {
+      return state.services.filter(service => state.selectedServices.includes(service.id));
+    }
+
+    function totalPrice() {
+      return selectedServiceObjects().reduce((sum, item) => sum + Number(item.price), 0);
+    }
+
+    function totalDuration() {
+      return selectedServiceObjects().reduce((sum, item) => sum + Number(item.duration), 0);
+    }
+
+    function renderSummary() {
+      const stylistId = document.getElementById('stylistSelect').value;
+      const stylist = state.stylists.find(item => item.id === stylistId);
+      const rows = [
+        ['Khách hàng', document.getElementById('customerName').value.trim()],
+        ['Điện thoại', document.getElementById('customerPhone').value.trim()],
+        ['Dịch vụ', selectedServiceObjects().map(item => item.name).join(', ')],
+        ['Stylist', stylist ? stylist.name : 'Stylist bất kỳ'],
+        ['Ngày & giờ', `${formatDate(document.getElementById('bookingDate').value)} · ${state.selectedTime}`],
+        ['Thời lượng', `${totalDuration()} phút`]
+      ];
+      document.getElementById('summary').innerHTML = rows.map(row => `<div class="summary-row"><span>${row[0]}</span><strong>${escapeHtml(row[1])}</strong></div>`).join('') +
+        `<div class="summary-row total"><span>Tổng dự kiến</span><strong>${money.format(totalPrice())}</strong></div>`;
+    }
+
+    async function submitBooking() {
+      const button = document.getElementById('nextBtn');
+      const back = document.getElementById('backBtn');
+      button.disabled = true;
+      back.disabled = true;
+      button.innerHTML = '<span class="spinner"></span>Đang đặt lịch…';
+      const payload = {
+        customerName: document.getElementById('customerName').value.trim(),
+        customerPhone: document.getElementById('customerPhone').value.trim(),
+        serviceIds: state.selectedServices,
+        stylistId: document.getElementById('stylistSelect').value,
+        bookingDate: document.getElementById('bookingDate').value,
+        bookingTime: state.selectedTime
+      };
+      try {
+        const result = await gas('createBooking', payload);
+        if (!result || !result.success) throw new Error(result && result.message ? result.message : 'Không thể tạo lịch hẹn.');
+        const stylist = state.stylists.find(item => item.id === result.stylistId);
+        document.getElementById('successMessage').textContent = `${result.message} Mã lịch: ${result.bookingId}${stylist ? ' · Stylist: ' + stylist.name : ''}.`;
+        document.getElementById('successOverlay').classList.add('show');
+      } catch (error) {
+        showToast(error.message, 'error');
+        state.step = 3;
+        resetAvailability();
+        updateStep();
+      } finally {
+        button.disabled = false;
+        back.disabled = false;
+        button.textContent = state.step === 4 ? 'Đặt lịch ngay' : 'Tiếp tục';
+      }
+    }
+
+    document.getElementById('newBookingBtn').addEventListener('click', () => {
+      document.getElementById('successOverlay').classList.remove('show');
+      state.step = 0;
+      state.selectedServices = [];
+      state.selectedTime = '';
+      state.availability = null;
+      renderApp();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function formatDate(value) {
+      if (!value) return '';
+      const [year, month, day] = value.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
+    function showToast(message, type) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.className = `toast ${type || ''} show`;
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      })[char]);
+    }
+  </script>
+</body>
+</html>
