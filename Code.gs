@@ -259,6 +259,64 @@ function createBooking(bookingData) {
   }
 }
 
+/**
+ * Tra cứu một lịch hẹn bằng số điện thoại và mã booking.
+ * Yêu cầu cả hai giá trị để hạn chế lộ lịch hẹn khi người khác chỉ biết số điện thoại.
+ */
+function getBookingDetails(customerPhone, bookingId) {
+  try {
+    ensureSheets_();
+    const phone = normalizePhone_(customerPhone);
+    const normalizedBookingId = cleanString_(bookingId).toUpperCase();
+
+    if (!/^(?:\+84|0)\d{9,10}$/.test(phone)) {
+      throw new Error('Số điện thoại không hợp lệ.');
+    }
+    if (!/^BK-[A-F0-9]{12}$/.test(normalizedBookingId)) {
+      throw new Error('Mã đặt lịch không hợp lệ.');
+    }
+
+    const appointments = rowsToObjects_(getSpreadsheet_().getSheetByName(CONFIG.sheets.appointments));
+    const row = appointments.find(function (item) {
+      return cleanString_(item.Booking_ID).toUpperCase() === normalizedBookingId &&
+        normalizePhone_(item.Customer_Phone) === phone;
+    });
+    if (!row) throw new Error('Không tìm thấy lịch hẹn phù hợp. Vui lòng kiểm tra lại thông tin.');
+
+    const serviceMap = getServiceMap_(false);
+    const stylistMap = rowsToObjects_(getSpreadsheet_().getSheetByName(CONFIG.sheets.stylists))
+      .reduce(function (map, stylist) {
+        map[cleanString_(stylist.ID)] = cleanString_(stylist.Name);
+        return map;
+      }, {});
+    const services = cleanString_(row.Service_IDs).split(',').map(function (id) {
+      const serviceId = cleanString_(id);
+      return serviceMap[serviceId]
+        ? { id: serviceId, name: serviceMap[serviceId].name }
+        : { id: serviceId, name: serviceId };
+    });
+    const stylistId = cleanString_(row.Stylist_ID);
+
+    return {
+      success: true,
+      booking: {
+        bookingId: normalizedBookingId,
+        customerName: cleanString_(row.Customer_Name).replace(/^'/, ''),
+        services: services,
+        stylistId: stylistId,
+        stylistName: stylistMap[stylistId] || stylistId,
+        bookingDate: formatSheetDate_(row.Booking_Date),
+        bookingTime: formatSheetTime_(row.Booking_Time),
+        totalPrice: Number(row.Total_Price) || 0,
+        status: cleanString_(row.Status)
+      }
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: safeErrorMessage_(error) };
+  }
+}
+
 function getSpreadsheet_() {
   if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -391,7 +449,7 @@ function getTimeZone_() {
 }
 
 function normalizePhone_(value) {
-  return cleanString_(value).replace(/[\s.()-]/g, '');
+  return cleanString_(value).replace(/^'/, '').replace(/[\s.()-]/g, '');
 }
 
 function escapeFormula_(value) {

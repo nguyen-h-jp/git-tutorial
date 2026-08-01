@@ -90,6 +90,23 @@
     .modal .btn { width: 100%; margin-top: 8px; }
     .loading-page { padding: 60px 20px; color: var(--muted); text-align: center; }
     .loading-page .spinner { width: 28px; height: 28px; border-color: rgba(134,81,43,.18); border-top-color: var(--accent-dark); }
+    .hero-actions { margin-top: 18px; }
+    .text-link { display: inline-flex; align-items: center; gap: 7px; color: var(--accent-dark); font-weight: 800; text-decoration: none; }
+    .text-link:hover { text-decoration: underline; }
+    .lookup-shell { margin-top: 18px; padding: 22px 18px; border: 1px solid rgba(255,255,255,.7); border-radius: 24px; background: rgba(255,253,249,.94); box-shadow: var(--shadow); }
+    .lookup-form { display: grid; gap: 12px; }
+    .lookup-form .btn { width: 100%; }
+    .lookup-result { margin-top: 18px; }
+    .lookup-result:empty { display: none; }
+    .booking-card { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; }
+    .booking-card-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 15px; border-bottom: 1px solid var(--line); }
+    .booking-code { font-size: .83rem; color: var(--muted); }
+    .status { padding: 6px 10px; border-radius: 99px; font-size: .76rem; font-weight: 800; background: var(--soft); }
+    .status-pending { color: #916019; background: #fff0cf; }
+    .status-confirmed { color: #176c55; background: #dff5ec; }
+    .status-cancelled { color: #a43232; background: #fde4e4; }
+    .status-completed { color: #315c8a; background: #e4effc; }
+    .modal-actions { display: grid; gap: 8px; margin-top: 10px; }
     @media (min-width: 720px) {
       .page { padding: 30px 24px 60px; }
       .hero { padding: 42px 10px 34px; }
@@ -100,6 +117,9 @@
       .cards { grid-template-columns: 1fr 1fr; }
       .slots { grid-template-columns: repeat(6, 1fr); }
       .footer { padding: 18px 32px 28px; }
+      .lookup-shell { padding: 28px 32px; }
+      .lookup-form { grid-template-columns: 1fr 1fr auto; align-items: end; }
+      .lookup-form .btn { width: auto; }
       .toast { right: 24px; bottom: 24px; left: auto; width: min(390px, calc(100% - 48px)); }
     }
   </style>
@@ -110,6 +130,7 @@
       <div class="eyebrow">Hair Studio · Booking</div>
       <h1>Mái tóc đẹp bắt đầu từ một cuộc hẹn.</h1>
       <p>Chọn dịch vụ, stylist và thời gian phù hợp. Chúng tôi sẽ liên hệ xác nhận lịch hẹn của bạn.</p>
+      <div class="hero-actions"><a class="text-link" href="#lookupSection">Xem lịch đã đặt →</a></div>
     </header>
 
     <section class="shell" aria-label="Biểu mẫu đặt lịch">
@@ -125,6 +146,21 @@
         <div class="loading-page"><span class="spinner"></span><p>Đang tải dữ liệu salon…</p></div>
       </div>
     </section>
+
+    <section id="lookupSection" class="lookup-shell" aria-labelledby="lookupTitle">
+      <h2 id="lookupTitle">Lịch của tôi</h2>
+      <p class="hint">Nhập số điện thoại và mã lịch được cấp sau khi đặt để xem chi tiết.</p>
+      <form id="lookupForm" class="lookup-form">
+        <label class="field">Số điện thoại
+          <input id="lookupPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="09xx xxx xxx" required>
+        </label>
+        <label class="field">Mã đặt lịch
+          <input id="lookupBookingId" autocomplete="off" spellcheck="false" placeholder="BK-XXXXXXXXXXXX" maxlength="15" required>
+        </label>
+        <button id="lookupBtn" class="btn btn-primary" type="submit">Tra cứu</button>
+      </form>
+      <div id="lookupResult" class="lookup-result" aria-live="polite"></div>
+    </section>
   </main>
 
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
@@ -133,7 +169,10 @@
       <div class="modal-icon">✓</div>
       <h3 id="successTitle">Đặt lịch thành công</h3>
       <p id="successMessage"></p>
-      <button id="newBookingBtn" class="btn btn-primary" type="button">Tạo lịch hẹn mới</button>
+      <div class="modal-actions">
+        <button id="viewBookingBtn" class="btn btn-primary" type="button">Xem lịch vừa đặt</button>
+        <button id="newBookingBtn" class="btn btn-secondary" type="button">Tạo lịch hẹn mới</button>
+      </div>
     </div>
   </div>
 
@@ -153,7 +192,11 @@
     const toast = document.getElementById('toast');
     let toastTimer;
 
-    document.addEventListener('DOMContentLoaded', loadInitialData);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadInitialData();
+      bindLookup();
+      restoreLastBooking();
+    });
 
     function gas(method, ...args) {
       return new Promise((resolve, reject) => {
@@ -162,6 +205,73 @@
           .withFailureHandler(error => reject(new Error(error && error.message ? error.message : String(error))))
           [method](...args);
       });
+    }
+
+    function bindLookup() {
+      document.getElementById('lookupForm').addEventListener('submit', lookupBooking);
+      document.getElementById('lookupBookingId').addEventListener('input', event => {
+        event.target.value = event.target.value.toUpperCase().replace(/\s/g, '');
+      });
+    }
+
+    function restoreLastBooking() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('hairSalonLastBooking') || 'null');
+        if (saved && saved.phone && saved.bookingId) {
+          document.getElementById('lookupPhone').value = saved.phone;
+          document.getElementById('lookupBookingId').value = saved.bookingId;
+        }
+      } catch (error) {
+        // Local storage may be disabled; lookup still works with manual input.
+      }
+    }
+
+    async function lookupBooking(event) {
+      if (event) event.preventDefault();
+      const phone = document.getElementById('lookupPhone').value.trim();
+      const bookingId = document.getElementById('lookupBookingId').value.trim().toUpperCase();
+      const button = document.getElementById('lookupBtn');
+      const resultBox = document.getElementById('lookupResult');
+      if (!phone || !bookingId) {
+        showToast('Vui lòng nhập số điện thoại và mã đặt lịch.', 'error');
+        return;
+      }
+
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner"></span>Đang tra cứu…';
+      resultBox.innerHTML = '';
+      try {
+        const result = await gas('getBookingDetails', phone, bookingId);
+        if (!result || !result.success) throw new Error(result && result.message ? result.message : 'Không tìm thấy lịch hẹn.');
+        renderBookingDetails(result.booking);
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Tra cứu';
+      }
+    }
+
+    function renderBookingDetails(booking) {
+      const statusLabels = {
+        Pending: 'Chờ xác nhận', Confirmed: 'Đã xác nhận', Cancelled: 'Đã hủy', Completed: 'Hoàn thành'
+      };
+      const statusClass = `status-${String(booking.status || '').toLowerCase()}`;
+      const rows = [
+        ['Khách hàng', booking.customerName],
+        ['Dịch vụ', (booking.services || []).map(item => item.name).join(', ')],
+        ['Stylist', booking.stylistName],
+        ['Ngày và giờ', `${formatDate(booking.bookingDate)} - ${booking.bookingTime}`]
+      ];
+      document.getElementById('lookupResult').innerHTML = `
+        <article class="booking-card">
+          <div class="booking-card-head">
+            <div><strong>Chi tiết lịch hẹn</strong><div class="booking-code">${escapeHtml(booking.bookingId)}</div></div>
+            <span class="status ${escapeHtml(statusClass)}">${escapeHtml(statusLabels[booking.status] || booking.status)}</span>
+          </div>
+          ${rows.map(row => `<div class="summary-row"><span>${row[0]}</span><strong>${escapeHtml(row[1])}</strong></div>`).join('')}
+          <div class="summary-row total"><span>Tổng tiền</span><strong>${money.format(booking.totalPrice)}</strong></div>
+        </article>`;
     }
 
     async function loadInitialData() {
@@ -442,6 +552,12 @@
         const result = await gas('createBooking', payload);
         if (!result || !result.success) throw new Error(result && result.message ? result.message : 'Không thể tạo lịch hẹn.');
         const stylist = state.stylists.find(item => item.id === result.stylistId);
+        state.lastBooking = { phone: payload.customerPhone, bookingId: result.bookingId };
+        try {
+          localStorage.setItem('hairSalonLastBooking', JSON.stringify(state.lastBooking));
+        } catch (error) {
+          // Booking remains successful even when local storage is unavailable.
+        }
         document.getElementById('successMessage').textContent = `${result.message} Mã lịch: ${result.bookingId}${stylist ? ' · Stylist: ' + stylist.name : ''}.`;
         document.getElementById('successOverlay').classList.add('show');
       } catch (error) {
@@ -464,6 +580,16 @@
       state.availability = null;
       renderApp();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('viewBookingBtn').addEventListener('click', () => {
+      document.getElementById('successOverlay').classList.remove('show');
+      if (state.lastBooking) {
+        document.getElementById('lookupPhone').value = state.lastBooking.phone;
+        document.getElementById('lookupBookingId').value = state.lastBooking.bookingId;
+      }
+      document.getElementById('lookupSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      lookupBooking();
     });
 
     function formatDate(value) {
